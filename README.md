@@ -2,6 +2,8 @@
 
 A terminal picker to start or resume an agent in the current directory, inspired by [harness-picker](https://github.com/devnull03/harness-picker). Built with Charm's Bubble Tea v2 and Lip Gloss v2
 
+![apicker Screenshot](./docs/screenshot.png)
+
 ## Install
 
 Requires Go 1.27 or newer to build and at least one of `claude`, `codex`, `pi`, `crush`, `opencode`, or `aider` on your PATH.
