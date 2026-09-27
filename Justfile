@@ -1,6 +1,9 @@
 default:
     @just --list
 
+run:
+    go run ./cmd/apicker
+
 fmt:
     gofmt -w cmd/apicker/*.go cmd/apicker/harnesses/*.go
 
