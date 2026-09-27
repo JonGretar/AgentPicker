@@ -39,7 +39,7 @@ func (m *picker) Init() tea.Cmd { return nil }
 func (m *picker) filter() {
 	m.filtered = nil
 	for i, c := range m.items {
-		label := c.harness.name
+		label := c.harness.Name()
 		if c.session != nil {
 			label += " " + c.session.Title
 		} else {
@@ -166,9 +166,9 @@ func (m *picker) View() tea.View {
 	}
 	for i := m.offset; i < end; i++ {
 		c := m.items[m.filtered[i]]
-		label := "+ new " + c.harness.name
+		label := "+ new " + c.harness.Name()
 		if c.session != nil {
-			label = fmt.Sprintf("%-7s %4s  %s", c.harness.name, age(c.session.Modified, m.now), c.session.Title)
+			label = fmt.Sprintf("%-7s %4s  %s", c.harness.Name(), age(c.session.Modified, m.now), c.session.Title)
 		}
 		prefix := "  "
 		if i == m.cursor {

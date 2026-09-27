@@ -23,7 +23,7 @@ func run() error {
 	}
 	items := choices(home, cwd, os.Stderr)
 	if len(items) == 0 {
-		return errors.New("no supported agent found on PATH (claude, codex, pi, crush)")
+		return errors.New("no available agent found")
 	}
 	model := newPicker(items)
 	if _, err := tea.NewProgram(model).Run(); err != nil {
@@ -33,14 +33,13 @@ func run() error {
 		return nil
 	}
 	c := model.picked
-	var args []string
-	if c.session != nil {
-		args = c.harness.resumeArgs(c.session.ID)
+	var launchErr error
+	if c.session == nil {
+		launchErr = c.harness.NewSession()
+	} else {
+		launchErr = c.harness.ResumeSession(*c.session)
 	}
-	cmd := exec.Command(c.harness.program, args...)
-	cmd.Dir = cwd
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := launchErr; err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
 			os.Exit(exit.ExitCode())

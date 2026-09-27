@@ -4,10 +4,13 @@
 
 ## Layout
 
-- `cmd/apicker/main.go`: CLI entry point and agent launch.
-- `cmd/apicker/harness.go`: installed-agent discovery and session readers.
+- `cmd/apicker/main.go`: CLI entry point and dispatch to the selected harness.
+- `cmd/apicker/harness.go`: installed-agent discovery and choice assembly.
+- `cmd/apicker/harnesses/harness.go`: shared `Harness` interface, registry, session type, and history helpers.
+- `cmd/apicker/harnesses/{claude,codex,pi,crush}.go`: one integration per file, each self-registering in `init()`.
 - `cmd/apicker/picker.go`: searchable terminal picker.
-- `cmd/apicker/harness_test.go`: session fixtures and picker tests.
+- `cmd/apicker/harnesses/harness_test.go`: session fixtures and integration tests.
+- `cmd/apicker/harness_test.go`: picker tests.
 
 ## Development
 
@@ -15,6 +18,7 @@
 - Test: `go test ./...`
 - Check: `go vet ./...`
 - Format changed Go files with `gofmt`.
+- To add an agent, create `cmd/apicker/harnesses/<agent>.go` in package `harnesses`, implement `Harness`, and call `Register(<agent>{})` in `init()`. Go compiles all files in a package; it does not discover implementations without registration. Add tests for the new reader.
 - Keep session discovery restricted to the current working directory; a malformed or missing history line should not prevent new sessions from being offered.
-- Keep agent commands interactive: stdin, stdout, and stderr must remain attached to the terminal after the picker closes.
+- Harnesses own their `IsAvailable`, `NewSession`, and `ResumeSession` behavior. Use `runInteractive` for terminal-based commands so stdin, stdout, and stderr remain attached after the picker closes.
 - Use `jj` for version-control operations in this repository.
