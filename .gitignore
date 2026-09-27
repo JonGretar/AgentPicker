@@ -1,0 +1,11 @@
+# Built executable and Go test artifacts
+/apicker
+/apicker.exe
+*.test
+*.out
+coverage.*
+
+# Local editor and OS files
+.DS_Store
+.idea/
+.vscode/
