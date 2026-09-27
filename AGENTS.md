@@ -19,6 +19,6 @@
 - Check: `go vet ./...`
 - Format changed Go files with `gofmt`.
 - To add an agent, create `cmd/apicker/harnesses/<agent>.go` in package `harnesses`, implement `Harness`, and call `Register(<agent>{})` in `init()`. Go compiles all files in a package; it does not discover implementations without registration. Add tests for the new reader.
-- Keep session discovery restricted to the current working directory; a malformed or missing history line should not prevent new sessions from being offered.
+- Keep session discovery restricted to the current working directory; a malformed or missing history line should not prevent new sessions from being offered. In `--loop` mode, refresh discovery after each agent exits and stop on picker cancellation.
 - Harnesses own their `IsAvailable`, `NewSession`, and `ResumeSession` behavior. Use `runInteractive` for terminal-based commands so stdin, stdout, and stderr remain attached after the picker closes.
 - Use `jj` for version-control operations in this repository.

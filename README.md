@@ -16,7 +16,7 @@ For a local checkout:
 go build -o apicker ./cmd/apicker
 ```
 
-Run `apicker` from a project directory. Type to filter by agent or session title, use ↑/↓ (or Ctrl-P/Ctrl-N) to navigate, Enter to launch, and Esc to cancel. Backspace removes a character; Ctrl-U clears the search. Only installed agents appear. New chats are listed first, followed by recent chats from this directory.
+Run `apicker` from a project directory. Type to filter by agent or session title, use ↑/↓ (or Ctrl-P/Ctrl-N) to navigate, Enter to launch, and Esc to cancel. Backspace removes a character; Ctrl-U clears the search. Only installed agents appear. New chats are listed first, followed by recent chats from this directory. By default, `apicker` exits when the selected agent exits. Run `apicker --loop` to return to a freshly populated picker after each agent session; Esc (or Ctrl-C in the picker) exits the loop. An agent's nonzero exit status is shown and the picker reopens.
 
 Sessions come from `~/.claude/history.jsonl`, `~/.codex/history.jsonl` plus `~/.codex/sessions`, and `~/.pi/agent/sessions`. Crush is queried with `crush session list --json` from the current directory. Session listing failures are reported but do not prevent starting a new chat.
 
