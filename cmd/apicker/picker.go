@@ -11,25 +11,33 @@ import (
 )
 
 var (
-	heading       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#B48EFA"))
-	selectedStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#B48EFA"))
-	muted         = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	heading      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#B48EFA"))
+	harnessStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#B48EFA"))
+	ageStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#DCAA72"))
+	titleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#E6E8F0"))
+	muted        = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
 )
 
 type picker struct {
-	items    []choice
-	filtered []int
-	query    string
-	cursor   int
-	offset   int
-	width    int
-	height   int
-	picked   *choice
-	now      time.Time
+	items     []choice
+	nameWidth int
+	filtered  []int
+	query     string
+	cursor    int
+	offset    int
+	width     int
+	height    int
+	picked    *choice
+	now       time.Time
 }
 
 func newPicker(items []choice) *picker {
-	m := &picker{items: items, width: 80, height: 24, now: time.Now()}
+	m := &picker{items: items, nameWidth: 7, width: 80, height: 24, now: time.Now()}
+	for _, c := range items {
+		if width := lipgloss.Width(c.harness.Name()); width > m.nameWidth {
+			m.nameWidth = width
+		}
+	}
 	m.filter()
 	return m
 }
@@ -147,6 +155,34 @@ func compact(s string, width int) string {
 	return string(r[:width-1]) + "…"
 }
 
+func renderChoice(c choice, now time.Time, width, nameWidth int, selected bool) string {
+	var b strings.Builder
+	remaining := width
+	appendPart := func(text string, style lipgloss.Style) {
+		if remaining <= 0 {
+			return
+		}
+		truncated := lipgloss.Width(text) > remaining
+		if truncated {
+			text = compact(text, remaining)
+		}
+		remaining -= lipgloss.Width(text)
+		b.WriteString(style.Bold(selected).Render(text))
+		if truncated {
+			remaining = 0
+		}
+	}
+	if c.session == nil {
+		appendPart("+ new ", muted)
+		appendPart(c.harness.Name(), harnessStyle)
+	} else {
+		appendPart(fmt.Sprintf("%-*s", nameWidth, c.harness.Name()), harnessStyle)
+		appendPart(fmt.Sprintf(" %4s  ", age(c.session.Modified, now)), ageStyle)
+		appendPart(strings.Join(strings.Fields(c.session.Title), " "), titleStyle)
+	}
+	return b.String()
+}
+
 func (m *picker) View() tea.View {
 	var b strings.Builder
 	b.WriteString(heading.Render("apicker"))
@@ -166,19 +202,12 @@ func (m *picker) View() tea.View {
 	}
 	for i := m.offset; i < end; i++ {
 		c := m.items[m.filtered[i]]
-		label := "+ new " + c.harness.Name()
-		if c.session != nil {
-			label = fmt.Sprintf("%-7s %4s  %s", c.harness.Name(), age(c.session.Modified, m.now), c.session.Title)
-		}
+		selected := i == m.cursor
 		prefix := "  "
-		if i == m.cursor {
+		if selected {
 			prefix = "› "
 		}
-		line := compact(label, m.width-4)
-		if i == m.cursor {
-			line = selectedStyle.Render(line)
-		}
-		b.WriteString(prefix + line + "\n")
+		b.WriteString(prefix + renderChoice(c, m.now, m.width-4, m.nameWidth, selected) + "\n")
 	}
 	b.WriteString("\n")
 	b.WriteString(muted.Render(fmt.Sprintf("%d matches  ·  ↑/↓ navigate  ·  enter select  ·  esc cancel", len(m.filtered))))

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/JonGretar/AgentPicker/cmd/apicker/harnesses"
 )
 
@@ -79,6 +80,71 @@ func TestLoopAfterNonzeroExit(t *testing.T) {
 	err = pickAndRun(false, func() (*choice, error) { return &c, nil }, func(choice) error { return exitErr })
 	if !errors.Is(err, exitErr) {
 		t.Fatalf("non-loop exit error = %v", err)
+	}
+}
+
+func TestSessionRowStyles(t *testing.T) {
+	var h harnesses.Harness
+	for _, agent := range harnesses.All() {
+		if agent.Name() == "opencode" {
+			h = agent
+			break
+		}
+	}
+	if h == nil {
+		t.Fatal("opencode harness not registered")
+	}
+	now := time.Unix(1700000000, 0)
+	c := choice{harness: h, session: &harnesses.Session{Title: "Project greeting", Modified: now}}
+	for _, selected := range []bool{false, true} {
+		row := renderChoice(c, now, 80, 8, selected)
+		for _, segment := range []string{
+			harnessStyle.Bold(selected).Render("opencode"),
+			ageStyle.Bold(selected).Render("   0m  "),
+			titleStyle.Bold(selected).Render("Project greeting"),
+		} {
+			if !strings.Contains(row, segment) {
+				t.Fatalf("selected=%v: missing styled segment %q in %q", selected, segment, row)
+			}
+		}
+		if lipgloss.Width(row) > 80 {
+			t.Fatalf("row too wide: %d", lipgloss.Width(row))
+		}
+	}
+	if harnessStyle.Render("x") == ageStyle.Render("x") || ageStyle.Render("x") == titleStyle.Render("x") {
+		t.Fatal("harness, age and title should have distinct colors")
+	}
+	narrow := renderChoice(c, now, 20, 8, false)
+	if lipgloss.Width(narrow) > 20 {
+		t.Fatalf("truncated row too wide: %d", lipgloss.Width(narrow))
+	}
+	newRow := renderChoice(choice{harness: h}, now, 80, 8, false)
+	if !strings.Contains(newRow, harnessStyle.Render("opencode")) {
+		t.Fatalf("new row missing colored harness: %q", newRow)
+	}
+}
+
+func TestSessionAgeColumnAlignment(t *testing.T) {
+	now := time.Unix(1700000000, 0)
+	var rows []choice
+	for _, h := range harnesses.All() {
+		if h.Name() == "opencode" || h.Name() == "crush" {
+			rows = append(rows, choice{harness: h, session: &harnesses.Session{Title: "Example", Modified: now}})
+		}
+	}
+	m := newPicker(rows)
+	if m.nameWidth != 8 {
+		t.Fatalf("name column = %d, want 8", m.nameWidth)
+	}
+	for _, c := range rows {
+		row := renderChoice(c, now, 80, m.nameWidth, false)
+		ageStart := strings.Index(row, ageStyle.Render("   0m  "))
+		if ageStart < 0 {
+			t.Fatalf("missing age in %q", row)
+		}
+		if col := lipgloss.Width(row[:ageStart]); col != m.nameWidth {
+			t.Fatalf("%s age starts in column %d, want %d", c.harness.Name(), col, m.nameWidth)
+		}
 	}
 }
 
