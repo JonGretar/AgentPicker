@@ -10,7 +10,7 @@ Requires Go 1.27 or newer to build and at least one of `claude`, `codex`, `pi`, 
 go install ./cmd/apicker
 ```
 
-For a local checkout:
+For a local checkout, use `just build` to build `./apicker`, or `just install` to build and install it at `~/.local/bin/apicker` (ensure `~/.local/bin` is on your `PATH`). Other recipes: `just fmt`, `just test`, `just vet`, and `just check`. Without `just`, build directly:
 
 ```sh
 go build -o apicker ./cmd/apicker

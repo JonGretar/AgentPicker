@@ -14,6 +14,7 @@
 
 ## Development
 
+- `Justfile` provides `fmt`, `build`, `test`, `vet`, `check`, and `install` (`~/.local/bin/apicker`) recipes.
 - Build: `go build -o apicker ./cmd/apicker`
 - Test: `go test ./...`
 - Check: `go vet ./...`
