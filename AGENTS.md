@@ -1,13 +1,13 @@
 # AgentPicker
 
-`apicker` is a Go CLI that starts or resumes Claude, Codex, pi, and Crush sessions from the current directory. Its picker uses Charm Bubble Tea v2 and Lip Gloss v2; do not add an fzf dependency.
+`apicker` is a Go CLI that starts or resumes Claude, Codex, pi, Crush, and OpenCode sessions from the current directory. Its picker uses Charm Bubble Tea v2 and Lip Gloss v2; do not add an fzf dependency.
 
 ## Layout
 
 - `cmd/apicker/main.go`: CLI entry point and dispatch to the selected harness.
 - `cmd/apicker/harness.go`: installed-agent discovery and choice assembly.
 - `cmd/apicker/harnesses/harness.go`: shared `Harness` interface, registry, session type, and history helpers.
-- `cmd/apicker/harnesses/{claude,codex,pi,crush}.go`: one integration per file, each self-registering in `init()`.
+- `cmd/apicker/harnesses/{claude,codex,pi,crush,opencode}.go`: one integration per file, each self-registering in `init()`.
 - `cmd/apicker/picker.go`: searchable terminal picker.
 - `cmd/apicker/harnesses/harness_test.go`: session fixtures and integration tests.
 - `cmd/apicker/harness_test.go`: picker tests.

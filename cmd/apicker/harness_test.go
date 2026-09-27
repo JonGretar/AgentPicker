@@ -84,7 +84,7 @@ func TestLoopAfterNonzeroExit(t *testing.T) {
 
 func TestPickerFilterAndSelect(t *testing.T) {
 	agents := harnesses.All()
-	items := []choice{{harness: agents[0]}, {harness: agents[1]}, {harness: agents[3], session: &harnesses.Session{ID: "id", Title: "Fix bug", Modified: time.Now()}}}
+	items := []choice{{harness: agents[0]}, {harness: agents[1]}, {harness: agents[4], session: &harnesses.Session{ID: "id", Title: "Fix bug", Modified: time.Now()}}}
 	m := newPicker(items)
 	for _, c := range "fix" {
 		m.Update(key(string(c)))
