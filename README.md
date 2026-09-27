@@ -1,6 +1,16 @@
 # Agent Picker
 
-A terminal picker to start or resume an agent in the current directory, inspired by [harness-picker](https://github.com/devnull03/harness-picker). Built with Charm's Bubble Tea v2 and Lip Gloss v2
+A terminal picker to start or resume an agent in the current directory, inspired by [harness-picker](https://github.com/devnull03/harness-picker). Built with Charm's Bubble Tea v2 and Lip Gloss v2.
+
+It's main use is as the startup command for [Zed](https://zed.dev/)'s Terminal Threads. Although also useful for if you don't remember in what Agent the thread was created in.
+
+To set as the init command in Zed have this in your config.
+
+```JSONC
+"agent": {
+  "terminal_init_command": "apicker --loop",
+}
+```
 
 ![apicker Screenshot](./docs/screenshot.png)
 
