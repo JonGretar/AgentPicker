@@ -53,6 +53,62 @@ func TestPiSessions(t *testing.T) {
 	}
 }
 
+func TestAiderSessions(t *testing.T) {
+	home, cwd, other := t.TempDir(), t.TempDir(), t.TempDir()
+	h := aider{}
+	if sessions, err := h.ListSessions(home, cwd); err != nil || len(sessions) != 0 {
+		t.Fatalf("missing history: sessions=%+v err=%v", sessions, err)
+	}
+	fixture(t, filepath.Join(other, aiderHistory), "unrelated chat")
+	fixture(t, filepath.Join(cwd, aiderHistory), "")
+	if sessions, err := h.ListSessions(home, cwd); err != nil || len(sessions) != 0 {
+		t.Fatalf("empty history: sessions=%+v err=%v", sessions, err)
+	}
+	path := filepath.Join(cwd, aiderHistory)
+	fixture(t, path, "## user\nHello aider\n")
+	sessions, err := h.ListSessions(home, cwd)
+	if err != nil || len(sessions) != 1 || sessions[0].ID != path || sessions[0].Title != "Continue chat" || sessions[0].Modified.IsZero() {
+		t.Fatalf("history: sessions=%+v err=%v", sessions, err)
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell fixture")
+	}
+	dir := t.TempDir()
+	argsFile := filepath.Join(dir, "args")
+	t.Setenv("PATH", dir)
+	t.Setenv("APICKER_TEST_ARGS", argsFile)
+	if h.IsAvailable() {
+		t.Fatal("aider available without executable")
+	}
+	fixture(t, filepath.Join(dir, "aider"), "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$APICKER_TEST_ARGS\"\n")
+	if err := os.Chmod(filepath.Join(dir, "aider"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if !h.IsAvailable() {
+		t.Fatal("aider unavailable with executable on PATH")
+	}
+	if err := h.NewSession(); err != nil {
+		t.Fatal(err)
+	}
+	args, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "--no-auto-commits\n--no-restore-chat-history\n--chat-history-file\n" + aiderHistory + "\n"; string(args) != want {
+		t.Fatalf("new args=%q, want %q", args, want)
+	}
+	if err := h.ResumeSession(sessions[0]); err != nil {
+		t.Fatal(err)
+	}
+	args, err = os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "--no-auto-commits\n--restore-chat-history\n--chat-history-file\n" + path + "\n"; string(args) != want {
+		t.Fatalf("resume args=%q, want %q", args, want)
+	}
+}
+
 func TestHarnessLaunches(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("uses a POSIX shell fixture")
@@ -154,10 +210,10 @@ func TestOpenCodeSessions(t *testing.T) {
 
 func TestRegisteredHarnesses(t *testing.T) {
 	got := All()
-	if len(got) != 5 {
-		t.Fatalf("registered %d harnesses, want 5", len(got))
+	if len(got) != 6 {
+		t.Fatalf("registered %d harnesses, want 6", len(got))
 	}
-	for i, name := range []string{"claude", "codex", "crush", "opencode", "pi"} {
+	for i, name := range []string{"aider", "claude", "codex", "crush", "opencode", "pi"} {
 		if got[i].Name() != name {
 			t.Fatalf("harness %d = %s, want %s", i, got[i].Name(), name)
 		}
