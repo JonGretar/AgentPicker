@@ -2,7 +2,9 @@ package harnesses
 
 import (
 	"encoding/json"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 )
 
@@ -17,6 +19,27 @@ func (crush) ResumeSession(session Session) error {
 }
 
 func (crush) ListSessions(_, cwd string) ([]Session, error) {
+	// Crush uses the nearest .crush directory, creating one in cwd if none exists.
+	for dir := cwd; ; dir = filepath.Dir(dir) {
+		dataDir := filepath.Join(dir, ".crush")
+		if info, err := os.Stat(dataDir); err == nil {
+			if info.IsDir() {
+				_, err := os.Stat(filepath.Join(dataDir, "crush.db"))
+				if os.IsNotExist(err) {
+					return nil, nil
+				}
+				if err != nil {
+					return nil, err
+				}
+				break
+			}
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
+		if dir == filepath.Dir(dir) {
+			return nil, nil
+		}
+	}
 	cmd := exec.Command("crush", "session", "list", "--json")
 	cmd.Dir = cwd
 	out, err := cmd.Output()

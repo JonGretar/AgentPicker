@@ -194,6 +194,59 @@ func TestHarnessLaunches(t *testing.T) {
 	}
 }
 
+func TestCrushSessionsDoNotCreateDatabase(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell fixture")
+	}
+	cwd, bin := t.TempDir(), t.TempDir()
+	argsFile := filepath.Join(bin, "args")
+	fixture(t, filepath.Join(bin, "crush"), "#!/bin/sh\nprintf '%s\\n' \"$PWD\" \"$@\" > \"$APICKER_TEST_ARGS\"\nprintf '%s\\n' '[]'\n")
+	if err := os.Chmod(filepath.Join(bin, "crush"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	t.Setenv("APICKER_TEST_ARGS", argsFile)
+	h := crush{}
+	checkSkipped := func(dir string) {
+		t.Helper()
+		rows, err := h.ListSessions("", dir)
+		if err != nil || len(rows) != 0 {
+			t.Fatalf("missing database: rows=%+v err=%v", rows, err)
+		}
+		if _, err := os.Stat(argsFile); !os.IsNotExist(err) {
+			t.Fatalf("Crush CLI invoked without database: %v", err)
+		}
+	}
+	checkSkipped(cwd)
+	if _, err := os.Stat(filepath.Join(cwd, ".crush")); !os.IsNotExist(err) {
+		t.Fatalf("Crush created a data directory: %v", err)
+	}
+	if err := os.Mkdir(filepath.Join(cwd, ".crush"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	checkSkipped(cwd)
+	fixture(t, filepath.Join(cwd, ".crush", "crush.db"), "")
+	nested := filepath.Join(cwd, "nested")
+	if err := os.Mkdir(nested, 0755); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := h.ListSessions("", nested)
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("existing database: rows=%+v err=%v", rows, err)
+	}
+	args, err := os.ReadFile(argsFile)
+	if err != nil || string(args) != nested+"\nsession\nlist\n--json\n" {
+		t.Fatalf("Crush CLI cwd/args=%q err=%v", args, err)
+	}
+	if err := os.Remove(argsFile); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(nested, ".crush"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	checkSkipped(nested)
+}
+
 func TestOpenCodeSessions(t *testing.T) {
 	home, cwd, other := t.TempDir(), t.TempDir(), t.TempDir()
 	data, err := json.Marshal([]map[string]any{

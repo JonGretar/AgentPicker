@@ -10,3 +10,5 @@ coverage.*
 .idea/
 .vscode/
 .aider*
+.crush
+.claude
