@@ -53,6 +53,41 @@ func TestPiSessions(t *testing.T) {
 	}
 }
 
+func TestOMPSessions(t *testing.T) {
+	home, cwd, other := t.TempDir(), t.TempDir(), t.TempDir()
+	h := omp{}
+	if rows, err := h.ListSessions(home, cwd); err != nil || len(rows) != 0 {
+		t.Fatalf("missing history: rows=%+v err=%v", rows, err)
+	}
+	root := filepath.Join(home, ".omp", "agent", "sessions")
+	current := filepath.Join(root, "current", "new.jsonl")
+	legacy := filepath.Join(root, "legacy", "old.jsonl")
+	fixture(t, current, `{"type":"title","title":"Renamed chat"}`+"\n"+
+		`{"type":"session","cwd":"`+cwd+`","title":"Original title"}`+"\n"+
+		`{"type":"message","message":{"role":"user","content":[{"type":"text","text":"First prompt"}]}}`+"\n")
+	fixture(t, legacy, `{"type":"session","cwd":"`+cwd+`/"}`+"\n"+
+		`{"type":"message","message":{"role":"assistant","content":"Ignore"}}`+"\n"+
+		`not json`+"\n"+
+		`{"type":"message","message":{"role":"user","content":[{"type":"image"},{"type":"text","text":"Legacy prompt"}]}}`+"\n")
+	fixture(t, filepath.Join(root, "other", "other.jsonl"), `{"type":"session","cwd":"`+other+`","title":"Other project"}`+"\n")
+	fixture(t, filepath.Join(root, "bad", "bad.jsonl"), `{"type":"title","title":"Orphaned title"}`+"\n"+`not json`+"\n")
+	fixture(t, filepath.Join(root, "empty", "empty.jsonl"), `{"type":"session","cwd":"`+cwd+`"}`+"\n")
+	rows, err := h.ListSessions(home, cwd)
+	if err != nil || len(rows) != 2 {
+		t.Fatalf("rows=%+v err=%v", rows, err)
+	}
+	byID := map[string]Session{}
+	for _, row := range rows {
+		byID[row.ID] = row
+		if row.Modified.IsZero() {
+			t.Fatalf("missing modification time: %+v", row)
+		}
+	}
+	if byID[current].Title != "Renamed chat" || byID[legacy].Title != "Legacy prompt" {
+		t.Fatalf("rows=%+v", rows)
+	}
+}
+
 func TestAiderSessions(t *testing.T) {
 	home, cwd, other := t.TempDir(), t.TempDir(), t.TempDir()
 	h := aider{}
@@ -121,7 +156,7 @@ func TestHarnessLaunches(t *testing.T) {
 		h      Harness
 		resume string
 	}{
-		{claude{}, "--resume"}, {codex{}, "resume"}, {crush{}, "--session"}, {opencode{}, "--session"}, {pi{}, "--session"},
+		{claude{}, "--resume"}, {codex{}, "resume"}, {crush{}, "--session"}, {omp{}, "--resume"}, {opencode{}, "--session"}, {pi{}, "--session"},
 	}
 	for _, agent := range agents {
 		t.Run(agent.h.Name(), func(t *testing.T) {
@@ -210,10 +245,10 @@ func TestOpenCodeSessions(t *testing.T) {
 
 func TestRegisteredHarnesses(t *testing.T) {
 	got := All()
-	if len(got) != 6 {
-		t.Fatalf("registered %d harnesses, want 6", len(got))
+	if len(got) != 7 {
+		t.Fatalf("registered %d harnesses, want 7", len(got))
 	}
-	for i, name := range []string{"aider", "claude", "codex", "crush", "opencode", "pi"} {
+	for i, name := range []string{"aider", "claude", "codex", "crush", "omp", "opencode", "pi"} {
 		if got[i].Name() != name {
 			t.Fatalf("harness %d = %s, want %s", i, got[i].Name(), name)
 		}
